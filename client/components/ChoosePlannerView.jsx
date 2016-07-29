@@ -19,7 +19,9 @@ export default class ChoosePlannerView extends React.Component {
       day: '1',
       slot: '1',
       selected: '',
-      itineraryId: null
+      itineraryId: null,
+      selectedCity: null,
+      nomadInfo: null
     };
   }
 
@@ -67,7 +69,6 @@ export default class ChoosePlannerView extends React.Component {
       body: JSON.stringify(data)
     })
     .then(res => {
-      console.log('Successful clientside POST-request');
       return res.json();
     })
     .then(json => {
@@ -78,8 +79,27 @@ export default class ChoosePlannerView extends React.Component {
     });
   }
 
+  // serverRequest2(url, data, callback) {
+  //   fetch(url, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Accept': 'application/json',
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify(data)
+  //   })
+  //   .then(res => {
+  //     return res.json();
+  //   })
+  //   .then(json => {
+  //     callback(json);
+  //   })
+  //   .catch(err => {
+  //     console.log(err);
+  //   });
+  // }
+
   getItinerary() {
-    console.log('getting itinerary');
     this.serverRequest(
       '/classes/events',
       { location: this.state.location },
@@ -142,7 +162,6 @@ export default class ChoosePlannerView extends React.Component {
   }
 
   saveItinerary() {
-    console.log('in the intinerary save');
     event.preventDefault();
     //Check if user is logged in
     if (!window.user) {
@@ -170,14 +189,42 @@ export default class ChoosePlannerView extends React.Component {
         location: this.state.location,
         startDate: this.state.startDate,
         endDate: this.state.endDate,
-        numDays: this.state.numDays
+        numDays: this.state.numDays,
+        lat: this.state.selectedCity.lat,
+        lng: this.state.selectedCity.lng,
+        cityName: this.state.selectedCity.name
       };
       this.serverRequest('/classes/itineraries', data, (json) => {
         this.setState({
           itineraryId: json.id
         });
       });
+      this.setState({
+        selectedCity: cityData,
+        location: cityData.name
+      });
     }
+  }
+
+  getNomad() {
+    this.serverRequest(
+      '/classes/city',
+      this.state.selectedCity, this.formatNomadData.bind(this)
+    );
+  }
+
+  getData() {
+    this.getItinerary();
+    this.getNomad();
+  }
+
+  formatNomadData(data) {
+
+    console.log(data.result[0].info.weather.type);
+    this.setState({
+      nomadInfo: data.result[0].info.weather.type
+    });
+    // console.log(data.result[0].info.weather.temperature.type);
   }
 
   render() {
@@ -211,6 +258,11 @@ export default class ChoosePlannerView extends React.Component {
             <button className="btn btn-success" onClick={this.getItinerary.bind(this)}>Preference-Based Itinerary</button>
           </div>
         </div>
+        <div>
+          Available facts about this city:
+          <h2>{this.state.nomadInfo}</h2>
+        </div>
+
         <div>
           <PlannerView 
             location={this.state.location} 
