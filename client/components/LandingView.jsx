@@ -11,25 +11,11 @@ export default class LandingView extends React.Component {
 		};
 	}
 
-  componentDidMount() {
+  componentWillMount() {
 		//public token for mapbox
 		L.mapbox.accessToken = 'pk.eyJ1IjoibW9mdGhlY3Jvc3MiLCJhIjoiY2lyNXBkNnliMDA5Z2c4bTFweWJlN2dyaCJ9.dBygwwib3OjYEypyhSMVDg';
-		var example = [
-			{
-				"type": "Feature",
-				"geometry": {
-					"type": "Point",
-					"coordinates": [-77.031952,38.913184]
-				}
-			},
-			{
-				"type": "Feature",
-				"geometry": {
-					"type": "Point",
-					"coordinates": [-122.413682,37.775408]
-				}
-			}
-		];
+    var map = L.mapbox.map('map', 'mapbox.streets')
+      .setView([37.8, -20], 2);
 
 		// mapGeo.scrollWheelZoom.enable();
 
@@ -47,15 +33,25 @@ export default class LandingView extends React.Component {
 					return res.json();
 				})
 				.then(json => {
-					var locations = json.map(function(item) {
-						return item.location;
-					})
-					console.log(locations);
-					// this.setState({locations: locations});
-          var map = L.mapbox.map('map', 'mapbox.streets')
-            .setView([37.8, -96], 4);
-          var myLayer = L.mapbox.featureLayer().setGeoJSON(locations).addTo(map);
+          var geoIds = json;
+          return geoIds
+
 				})
+        .then(geoIds => {
+
+          var myLayer = L.mapbox.featureLayer().addTo(map);
+
+          myLayer.on('layeradd', function(e) {
+            var marker = e.layer,
+              feature = marker.feature;
+            marker.setIcon(L.icon(feature.properties.icon));
+            var content = '<h4>'+ feature.properties.title+'<\/h4>' + '<p>' + feature.properties.description + '<\/p>' + '<img src="'+feature.properties.image+'" alt="">';
+            marker.bindPopup(content);
+          });
+
+          myLayer.setGeoJSON(geoIds);
+          map.scrollWheelZoom.disable();
+        })
 				.catch(err => {
 					console.log(err);
 				});
